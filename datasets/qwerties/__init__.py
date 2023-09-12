@@ -4,10 +4,10 @@ from pathlib import Path
 import json
 
 
-def generateQwerties(A, B, nperclust=100, blur=1):
-    qwertiesFileName = "qwerties.json"
-    if Path.exists(Path(qwertiesFileName)):
-        with open(qwertiesFileName, "r") as f:
+def generate(A, B, root=Path("datasets") / Path("qwerties"), nperclust=100, blur=1):
+    qwertiesFilePath = root / Path("qwerties.json")
+    if Path.exists(qwertiesFilePath):
+        with open(qwertiesFilePath, "r") as f:
             dataLabels = json.load(f)
             data = Tensor(dataLabels["data"])
             labels = Tensor(dataLabels["labels"])
@@ -20,7 +20,7 @@ def generateQwerties(A, B, nperclust=100, blur=1):
     labels = torch.vstack(
         (torch.zeros(len(data) // 2, 1), torch.ones(len(data) // 2, 1))
     )
-    with open(qwertiesFileName, "w") as f:
+    with open(qwertiesFilePath, "w") as f:
         json.dump(
             {
                 "data": data.tolist(),
