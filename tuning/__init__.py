@@ -7,20 +7,16 @@ class Tuner:
         self,
         net: nn.Module,
         cv: CrossValidation,
-        cvParams: dict,
         tunableParams: dict,
         condition=lambda **_: True,
         device: str = "cuda",
     ) -> None:
         self.cv = cv
         self.tunableParams = tunableParams
-        self.cvParams = cvParams
         self.condition = condition
         self.device = device
         self.net = net
-        debug.Print(
-            device=device, cvType=self.cv.crossValidate.__name__, cvParams=cvParams
-        )
+        debug.Print(device=device, cvType=self.cv.__class__.__name__)
 
     def fit(self):
         file = None
@@ -50,7 +46,7 @@ class Tuner:
                 modelHyperParams=modelHyperParams,
             )
             self.cv.model.setupNet(self.net, self.device, **modelHyperParams)
-            scoresForConfig = self.cv.fit(**self.cvParams, **dataHyperParams)
+            scoresForConfig = self.cv.fit(**dataHyperParams)
             if file != None:
                 print(scoresForConfig.tolist(), file=file)
         if file != None:

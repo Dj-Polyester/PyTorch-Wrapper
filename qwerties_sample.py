@@ -1,28 +1,70 @@
 # %%
 from tuning import *
-from models.FFN import *
+from models.nets.FFN import *
 import matplotlib.pyplot as plt
 import datasets.qwerties as qwerties
 
-# %%
-data, labels = qwerties.generate(A=[1, 1], B=[2, 3])
-
 
 # %%
-zeroCoo = data[torch.where(labels == 0)[0]]
-oneCoo = data[torch.where(labels == 1)[0]]
-zeroCoo[:, 0].shape
+dataset, numclasses = qwerties.generate(
+    [[1, 1], [2, 3], [0, 2]], [25, 50, 100], [0.3, 1, 2]
+)
 
 
 # %%
+coos = [0] * numclasses
+colors = [
+    "b",
+    "g",
+    "r",
+    "c",
+    "m",
+    "y",
+    "k",
+    "w",
+]
+shapes = [
+    ".",
+    "o",
+    "v",
+    "^",
+    "<",
+    ">",
+    "1",
+    "2",
+    "3",
+    "4",
+    "8",
+    "s",
+    "p",
+    "P",
+    "*",
+    "h",
+    "H",
+    "+",
+    "x",
+    "X",
+    "D",
+    "d",
+    "|",
+    "_",
+]
 
-plt.plot(zeroCoo[:, 0], zeroCoo[:, 1], "go")
-plt.plot(oneCoo[:, 0], oneCoo[:, 1], "bo")
+
+# %%
+data = dataset.tensors[0]
+labels = dataset.tensors[1]
+for cls in range(numclasses):
+    coo = data[torch.where(labels == cls)[0]]
+    colorIndex = cls % len(colors)
+    shapeIndex = cls % len(shapes)
+    marker = f"{colors[colorIndex]}{shapes[shapeIndex]}"
+    plt.plot(coo[:, 0], coo[:, 1], marker)
 plt.show()
 
 
 # %%
-dataset = Data(data, labels)
+compoundData = Data(dataset)
 
 # %%
 DEVICE = "cpu"
@@ -30,10 +72,11 @@ DEVICE = "cpu"
 
 tuner = Tuner(
     net=FFN,
-    cv=CrossValidation(
-        TorchClassifier(data=dataset, _in=2, filename="results.txt"),
+    cv=HoldoutCrossValidation(
+        TorchClassifier(
+            data=compoundData, _in=2, out=numclasses, filename="results.txt"
+        ),
     ),
-    cvParams={VALIDATION_SIZE: 0.2},
     tunableParams={
         # data
         BATCH_SIZE: [20, 40],
@@ -48,6 +91,7 @@ tuner = Tuner(
     },
     device=DEVICE,
 )
+
 
 # %%
 tuner.fit()
