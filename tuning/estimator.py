@@ -34,13 +34,13 @@ class TorchEstimator:
             _in = inputSize[1]
         self._in = _in
         self.out = out
-        self.metrics = Metrics(_metrics, self.impossibleMetrics, filename)
+        self.metrics = Metrics(_metrics, self.impossibleMetrics)
 
     def label(self, preds):
         return preds
 
     def train(self, trainData: Data) -> Tensor:
-        batchAccumulatedScores = self.metrics.zerosFrom()
+        batchAccumulatedScores = self.metrics.zerosFrom().to(device=self.device)
 
         # enable regularization and batch normalization
         self.net.train()
@@ -58,7 +58,7 @@ class TorchEstimator:
                 yHat,
                 y,
                 loss,
-            )
+            ).to(device=self.device)
 
             # backprop
             self.optimizer.zero_grad(set_to_none=True)
@@ -68,7 +68,7 @@ class TorchEstimator:
         return batchAccumulatedScores / trainData.numOfBatches
 
     def eval(self, testData: Data) -> Tensor:
-        batchAccumulatedScores = self.metrics.zerosFrom()
+        batchAccumulatedScores = self.metrics.zerosFrom().to(device=self.device)
 
         # disable regularization and batch normalization
         self.net.eval()
@@ -81,7 +81,11 @@ class TorchEstimator:
                 yHat = self.net(X)
 
                 # compute scores
-                batchAccumulatedScores += self.metrics.scoresFrom(self.label, yHat, y)
+                batchAccumulatedScores += self.metrics.scoresFrom(
+                    self.label,
+                    yHat,
+                    y,
+                ).to(device=self.device)
 
         return batchAccumulatedScores / testData.numOfBatches
 

@@ -1,5 +1,7 @@
 # hyperparameter tuning and cross validation
 from sklearn import model_selection
+
+from tuning.estimator import TorchEstimator
 from .estimator import *
 
 # Data
@@ -7,11 +9,9 @@ BATCH_SIZE = "batchSize"
 TRAIN_BATCH_SIZE = "trainBatchSize"
 VALIDATION_BATCH_SIZE = "validationBatchSize"
 # Cross validation
-HOLDOUT = "Holdout"
-VALIDATION_SIZE = "Validation size"
-KFOLD = "KFold"
-NUMBER_OF_SPLITS = "Number of splits"
-NUMBER_OF_REPEATS = "Number of repeats"
+VALIDATION_SIZE = "validationSize"
+NUMBER_OF_SPLITS = "nSplits"
+NUMBER_OF_REPEATS = "nRepeats"
 
 
 class CrossValidation:
@@ -21,7 +21,6 @@ class CrossValidation:
         model: TorchEstimator,
         testSize: int = 0.2,
         # experiment parameters
-        cvType: str = HOLDOUT,
         numberOfEpochs: int = 100,
     ):
         # data
@@ -30,8 +29,26 @@ class CrossValidation:
         self.model = model
         # cv
         self.numberOfEpochs = numberOfEpochs
-        self.crossValidate = getattr(self, cvType.lower())
-        debug.Print(numberOfEpochs=numberOfEpochs, testSize=testSize)
+
+    def fit(self, **kwargs) -> Tensor:
+        raise NotImplementedError()
+
+
+class HoldoutCrossValidation(CrossValidation):
+    def __init__(
+        self,
+        model: TorchEstimator,
+        testSize: int = 0.2,
+        numberOfEpochs: int = 100,
+        validationSize=0.2,
+    ):
+        super().__init__(model, testSize, numberOfEpochs)
+        self.validationSize = validationSize
+        debug.Print(
+            numberOfEpochs=numberOfEpochs,
+            testSize=testSize,
+            validationSize=validationSize,
+        )
 
     def iter4epochs(self, trainData: Data, validationData: Data, **kwargs):
         batchSize = kwargs.get(BATCH_SIZE, None)
@@ -43,7 +60,9 @@ class CrossValidation:
 
         trainData.load(trainBatchSize)
         validationData.load(validationBatchSize)
-        scores = self.model.metrics.zerosFrom3d(self.numberOfEpochs)
+        scores = self.model.metrics.zerosFrom3d(self.numberOfEpochs).to(
+            device=self.model.device
+        )
         for i in range(self.numberOfEpochs):
             scores[0, i] = self.model.train(trainData)
             scores[1, i] = self.model.eval(validationData)
@@ -56,21 +75,38 @@ class CrossValidation:
                 )
         return scores
 
-    def holdout(self, **kwargs):
+    def fit(self, **kwargs):
         """Trains on train set, tests on validation set"""
         self.model.net.resetParameters()
-        validationSize = kwargs.get(VALIDATION_SIZE, 0.2)
-        trainData, validationData = self.trainData.trainTestSplit(validationSize)
+        trainData, validationData = self.trainData.trainTestSplit(self.validationSize)
         return self.iter4epochs(trainData, validationData, **kwargs)
 
-    def kfold(self, **kwargs):
-        """Trains on train set, tests on the fold"""
-        nsplits = kwargs.get(NUMBER_OF_SPLITS, 5)
-        nrepeats = kwargs.get(NUMBER_OF_REPEATS, 10)
-        rskf = model_selection.RepeatedStratifiedKFold(
-            n_splits=nsplits, n_repeats=nrepeats
+
+class KFoldCrossValidation(CrossValidation):
+    def __init__(
+        self,
+        model: TorchEstimator,
+        testSize: int = 0.2,
+        numberOfEpochs: int = 100,
+        nSplits: int = 5,
+        nRepeats: int = 10,
+    ):
+        super().__init__(model, testSize, numberOfEpochs)
+        self.nSplits = nSplits
+        self.nRepeats = nRepeats
+        debug.Print(
+            numberOfEpochs=numberOfEpochs,
+            testSize=testSize,
+            nSplits=nSplits,
+            nRepeats=nRepeats,
         )
-        meanScores = self.model.metrics.zerosFrom3d(self.numberOfEpochs)
+
+    def fit(self, **kwargs):
+        """Trains on train set, tests on the fold"""
+        rskf = model_selection.RepeatedStratifiedKFold(
+            n_splits=self.nsplits, n_repeats=self.nrepeats
+        )
+        sumScores = self.model.metrics.zerosFrom3d(self.numberOfEpochs)
         for i, (trainIndices, testIndices) in enumerate(
             rskf.split(*self.trainData.dataset.tensors)
         ):
@@ -79,10 +115,15 @@ class CrossValidation:
             trainData, validationData = self.trainData.trainTestSplitByIndices(
                 trainIndices, testIndices
             )
-            meanScores += self.iter4epochs(trainData, validationData, **kwargs)
+            sumScores += self.iter4epochs(
+                trainData,
+                validationData,
+                False,
+                **kwargs,
+            )
 
         numberOfSplits = rskf.get_n_splits()
-        return meanScores / numberOfSplits
+        return sumScores / numberOfSplits
 
-    def fit(self, **kwargs) -> Tensor:
-        return self.crossValidate(**kwargs)
+    def _splitKfold():
+        pass

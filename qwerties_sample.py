@@ -73,9 +73,7 @@ DEVICE = "cpu"
 tuner = Tuner(
     net=FFN,
     cv=HoldoutCrossValidation(
-        TorchClassifier(
-            data=compoundData, _in=2, out=numclasses, filename="results.txt"
-        ),
+        TorchClassifier(data=compoundData, _in=2, out=numclasses),
     ),
     tunableParams={
         # data
@@ -90,6 +88,7 @@ tuner = Tuner(
         ACTIVATION_FUNCTION: ["ReLU"],
     },
     device=DEVICE,
+    filename="results.txt",
 )
 
 

@@ -26,9 +26,7 @@ class Metrics:
         self,
         _metrics: str | FunctionType | list,
         impossibleMetrics: list = [],
-        filename: str = None,
     ):
-        self.filename = filename
         self.map = {}
         self.impossibleMetrics = impossibleMetrics
         if _metrics != None:
@@ -38,7 +36,6 @@ class Metrics:
             elif isinstance(_metrics, str):
                 self.addIfPossible(*self._create(_metrics))
             elif callable(_metrics):
-                self.metricsNames = [_metrics.__name__]
                 self.addIfPossible(*self._create(_metrics))
             else:
                 debug.TypeError(_metrics=_metrics)
@@ -87,6 +84,9 @@ class Metrics:
 
     def zerosFrom3d(self, numberOfEpochs):
         return torch.zeros(2, numberOfEpochs, len(self.map))
+
+    def zerosFrom4d(self, numberOfHyperparams, numberOfEpochs):
+        return torch.zeros(numberOfHyperparams, 2, numberOfEpochs, len(self.map))
 
     def scoresFrom(self, labelfun, yHat, y, lossCached: Tensor = None):
         loss = self.map[Metric.LOSS](yHat, y) if lossCached == None else lossCached
