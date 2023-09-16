@@ -1,3 +1,4 @@
+from typing import Any
 from torch.utils.data import DataLoader, Dataset, TensorDataset, Subset, random_split
 from torch import nn as nn, Tensor
 import numpy as np
@@ -5,28 +6,21 @@ import debug
 
 
 class Data:
-    def __init__(
-        self,
-        data: Tensor = None,
-        labels: Tensor = None,
-        dataset: Dataset = None,
-    ):
-        if isinstance(data, Tensor) and isinstance(labels, Tensor):
-            dataset = TensorDataset(data, labels)
-        elif not isinstance(dataset, Dataset):
-            raise debug.TypeError(data=data, labels=labels, dataset=dataset)
+    def __init__(self, dataset: Dataset = None):
         self.dataset = dataset
 
     def load(
         self,
         batchSize: int = 1,
-        deleteDataset: bool = False,
+        deleteDataset: bool = True,
     ):
-        self.numOfBatches = int(np.math.ceil(len(self.dataset) / batchSize))
-        self.loader = DataLoader(
-            self.dataset,
-            batch_size=batchSize,
-        )
+        if not hasattr(self, "loader") or batchSize != self.loader.batch_size:
+            self.loader = DataLoader(
+                self.dataset,
+                batch_size=batchSize,
+            )
+            self.batchSize = self.loader.batch_size
+            self.numOfBatches = int(np.math.ceil(len(self.dataset) / self.batchSize))
         if deleteDataset:
             del self.dataset
 
@@ -39,8 +33,8 @@ class Data:
             raise debug.TypeError(testSize=testSize)
         traindataset, testdataset = random_split(self.dataset, lengths=lengths)
         return (
-            Data(dataset=traindataset),
-            Data(dataset=testdataset),
+            Data(traindataset),
+            Data(testdataset),
         )
 
     def trainTestSplitByIndices(
@@ -49,15 +43,15 @@ class Data:
         traindataset = Subset(self.dataset, trainIndices)
         testdataset = Subset(self.dataset, testIndices)
         return (
-            Data(dataset=traindataset),
-            Data(dataset=testdataset),
+            Data(traindataset),
+            Data(testdataset),
         )
 
     def __len__(self) -> int:
         if hasattr(self, "dataset"):
             return len(self.dataset)
         if hasattr(self, "loader"):
-            return len(self.loader) * self.numOfBatches
+            return self.numOfBatches * self.batchSize
 
     def __getitem__(self, offset: int):
         if hasattr(self, "dataset"):
@@ -71,3 +65,11 @@ class Data:
             return iter(self.loader)
         if hasattr(self, "dataset"):
             return iter(self.dataset)
+
+    # def __setattr__(self, __name: str, __value: Any) -> None:
+    #     if __name in (
+    #         "batchSize",
+    #         "numOfBatches",
+    #     ):
+    #         raise ValueError(f"The attribute {__name} cannot be set")
+    #     super.__setattr__(__name, __value)
