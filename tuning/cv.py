@@ -50,13 +50,8 @@ class HoldoutCrossValidation(CrossValidation):
             validationSize=validationSize,
         )
 
-    def iter4epochs(self, trainData: Data, validationData: Data, **kwargs):
-        batchSize = kwargs.get(BATCH_SIZE, None)
-        trainBatchSize = kwargs.get(TRAIN_BATCH_SIZE, 1)
-        validationBatchSize = kwargs.get(VALIDATION_BATCH_SIZE, len(validationData))
-
-        if isinstance(batchSize, int):
-            trainBatchSize = validationBatchSize = batchSize
+    def fit(self, **kwargs) -> Tensor:
+        raise NotImplementedError()
 
         trainData.load(trainBatchSize)
         validationData.load(validationBatchSize)
