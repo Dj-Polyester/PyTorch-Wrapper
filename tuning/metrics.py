@@ -1,7 +1,7 @@
 from types import FunctionType
 import torch
 from torch import Tensor
-import debug
+from utils import debug
 
 
 class Metric:

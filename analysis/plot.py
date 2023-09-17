@@ -1,4 +1,4 @@
-import debug
+from utils import debug
 from ..tuning import Tuner
 from ..tuning.metrics import Metrics
 import matplotlib.pyplot as plt

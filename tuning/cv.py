@@ -30,6 +30,29 @@ class CrossValidation:
         # cv
         self.numberOfEpochs = numberOfEpochs
 
+    def iter4epochs(self, trainData: Data, validationData: Data, **kwargs):
+        batchSize = kwargs.get(BATCH_SIZE, None)
+        trainBatchSize = kwargs.get(TRAIN_BATCH_SIZE, 1)
+        validationBatchSize = kwargs.get(VALIDATION_BATCH_SIZE, len(validationData))
+
+        if isinstance(batchSize, int):
+            trainBatchSize = validationBatchSize = batchSize
+
+        trainData.load(trainBatchSize)
+        validationData.load(validationBatchSize)
+        scores = self.model.metrics.zerosFrom3d(self.numberOfEpochs)
+        for i in range(self.numberOfEpochs):
+            scores[0, i] = self.model.train(trainData)
+            scores[1, i] = self.model.eval(validationData)
+
+            if debug.printEnabled:
+                debug.Print(
+                    epoch=i + 1,
+                    trainScores=self.model.metrics.scores2Dict(scores[0, i]),
+                    validationScores=self.model.metrics.scores2Dict(scores[1, i]),
+                )
+        return scores
+
     def fit(self, **kwargs) -> Tensor:
         raise NotImplementedError()
 

@@ -2,7 +2,7 @@ from typing import Any
 from torch.utils.data import DataLoader, Dataset, TensorDataset, Subset, random_split
 from torch import nn as nn, Tensor
 import numpy as np
-import debug
+from utils import debug
 
 
 class Data:
