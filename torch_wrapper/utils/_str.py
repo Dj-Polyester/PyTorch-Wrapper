@@ -1,4 +1,17 @@
+from _io import TextIOWrapper
+
+
 class Str(str):
+    def __new__(cls, obj):
+        instance = super().__new__(cls, obj)
+        instance.whitespace = (" ", "\t", "\n")
+        if isinstance(obj, TextIOWrapper):
+            instance.file = obj
+            instance.iter = instance._iter
+        else:
+            instance.iter = instance.__iter__
+        return instance
+
     @staticmethod
     def _convert(item: str):
         try:
@@ -15,9 +28,6 @@ class Str(str):
                     except SyntaxError:
                         return item
 
-    def _initElementalContainer(self):
-        self.tmpContainer = self.type()
-
     def _addFn(self, item):
         if isinstance(self.tmpContainer, list):
             self.tmpContainer.insert(0, item)
@@ -32,8 +42,8 @@ class Str(str):
                 self.tmpContainer[item] = self.itemTmp
                 self.itemTmp = ""
 
-    def _append2stack(self, fn):
-        self.stack.append(fn(self.itemTmp))
+    def _append2stack(self):
+        self.stack.append(self.fn(self.itemTmp))
         self.itemTmp = ""
 
     def tolist(self, fn=_convert, allowCommaBeforeClosingSym=True):
@@ -45,64 +55,77 @@ class Str(str):
     def todict(self, fn=_convert, allowCommaBeforeClosingSym=True):
         return self.tocontainer(dict, fn, allowCommaBeforeClosingSym)
 
+    def _processChar(self, c):
+        if self.startString == None and c != " ":
+            self.startString = c
+            if self.startString != self.openingSym:
+                raise StartsEndsException("starts", self.startString)
+        if c == self.openingSym:
+            if self.prevSym not in (" ", ",", self.openingSym) and (
+                self.type != dict or self.prevSym != ":"
+            ):
+                raise InvalidCharException(self.prevSym, c)
+            self.itemTmp = ""
+            self.stack.append(self.openingSym)
+        elif c == ",":
+            if self.prevSym in (",", ":", self.openingSym):
+                raise InvalidCharException(self.prevSym, c)
+            if self.itemTmp != "":
+                self._append2stack()
+        elif c == ":":
+            if self.prevSym in (",", ":", self.openingSym, self.closingSym):
+                raise InvalidCharException(self.prevSym, c)
+            self._append2stack()
+        elif c == self.closingSym:
+            if self.prevSym == ":" or (
+                self.prevSym == "," and not self.allowCommaBeforeClosingSym
+            ):
+                raise InvalidCharException(self.prevSym, c)
+            if self.itemTmp != "":
+                self._append2stack()
+            self.tmpContainer = self.type()
+            while self.stack[-1] != self.openingSym:
+                stackLast = self.stack.pop()
+                self._addFn(stackLast)
+                if len(self.stack) == 0:
+                    raise InbalancedCharException(self.closingSym, self.openingSym)
+            self.stack.pop()
+            self.stack.append(self.tmpContainer)
+        elif c in self.whitespace:
+            pass
+        else:
+            self.itemTmp += c
+        if c not in self.whitespace:
+            self.prevSym = c
+
+    def _iter(self):
+        c = True
+        while c:
+            c = self.file.read(1)
+            if c not in self.whitespace and c:
+                yield c
+
     def tocontainer(self, _type, fn, allowCommaBeforeClosingSym):
         if _type == list:
-            openingSym = "["
-            closingSym = "]"
+            self.openingSym = "["
+            self.closingSym = "]"
         elif _type == set or _type == dict:
-            openingSym = "{"
-            closingSym = "}"
+            self.openingSym = "{"
+            self.closingSym = "}"
         self.type = _type
         self.stack = []
         self.itemTmp = ""
-        prevSym = " "
-        startString = None
-        for c in self:
-            if startString == None and c != " ":
-                startString = c
-                if startString != openingSym:
-                    raise StartsEndsException("starts", startString)
-
-            if c == openingSym:
-                if prevSym not in (" ", ",", openingSym) and (
-                    self.type != dict or prevSym != ":"
-                ):
-                    raise InvalidCharException(prevSym, c)
-                self.itemTmp = ""
-                self.stack.append(openingSym)
-            elif c == ",":
-                if prevSym in (",", ":", openingSym):
-                    raise InvalidCharException(prevSym, c)
-                if self.itemTmp != "":
-                    self._append2stack(fn)
-            elif c == ":":
-                if prevSym in (",", ":", openingSym, closingSym):
-                    raise InvalidCharException(prevSym, c)
-                self._append2stack(fn)
-            elif c == closingSym:
-                if prevSym == ":" or (
-                    prevSym == "," and not allowCommaBeforeClosingSym
-                ):
-                    raise InvalidCharException(prevSym, c)
-                if self.itemTmp != "":
-                    self._append2stack(fn)
-                self._initElementalContainer()
-                while self.stack[-1] != openingSym:
-                    stackLast = self.stack.pop()
-                    self._addFn(stackLast)
-                    if len(self.stack) == 0:
-                        raise InbalancedCharException(closingSym, openingSym)
-                self.stack.pop()
-                self.stack.append(self.tmpContainer)
-            else:
-                self.itemTmp += c
-            if c != " ":
-                prevSym = c
-        if prevSym != closingSym:
-            raise StartsEndsException("ends", prevSym)
+        self.prevSym = " "
+        self.startString = None
+        self.allowCommaBeforeClosingSym = allowCommaBeforeClosingSym
+        self.fn = fn
+        for c in self.iter():
+            self._processChar(c)
+        if self.prevSym != self.closingSym:
+            raise StartsEndsException("ends", self.prevSym)
         for elem in self.stack:
-            if elem == openingSym:
-                raise InbalancedCharException(openingSym, closingSym)
+            if elem == self.openingSym:
+                raise InbalancedCharException(self.openingSym, self.closingSym)
         if self.stack == []:
             raise StrException(
                 f"The given string {self} is not a {self.type.__name__} literal"

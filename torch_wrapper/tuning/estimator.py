@@ -4,10 +4,6 @@ from torch.optim.optimizer import Optimizer
 from .data import *
 from .metrics import Metric, Metrics
 
-# model
-# Nontunable params
-CLASSIFICATION = "Classification"
-REGRESSION = "Regression"
 # Tunable params
 LEARNING_RATE = "learningRate"
 OPTIMIZER = "optimizer"

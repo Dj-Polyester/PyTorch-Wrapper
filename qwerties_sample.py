@@ -1,4 +1,5 @@
 # %%
+import torch
 from torch_wrapper.tuning import *
 from torch_wrapper.models.nets.FFN import *
 import torch_wrapper.datasets.qwerties as qwerties
