@@ -30,7 +30,7 @@ class TorchEstimator:
         inputSize = data[0][0].numel()
         if _in == None:
             if inputSize == None:
-                raise debug.ValueError(_in=_in, dataSize=inputSize)
+                raise Debug.ValueError(_in=_in, dataSize=inputSize)
             _in = inputSize[1]
         self._in = _in
         self.out = out

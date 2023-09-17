@@ -18,7 +18,7 @@ class Tuner:
         self.condition = condition
         self.device = device
         self.net = net
-        debug.Print(device=device, cvType=self.cv.__class__.__name__)
+        Debug.Print(device=device, cvType=self.cv.__class__.__name__)
 
     def fit(self):
         file = None
@@ -62,7 +62,7 @@ class Tuner:
                 del hyperParams[k]
         modelHyperParams = hyperParams
 
-        debug.Print(
+        Debug.Print(
             param=i,
             dataHyperParams=dataHyperParams,
             modelHyperParams=modelHyperParams,
@@ -84,7 +84,7 @@ class Tuner:
         for i, hyperParams in enumerate(
             self.hyperparamGen(self.condition, **self.tunableParams)
         ):
-            debug.Print(param=i, params=hyperParams)
+            Debug.Print(param=i, params=hyperParams)
 
     def numberOfHyperParams(self):
         if not hasattr(self, "_numberOfHyperParams"):

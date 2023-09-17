@@ -45,8 +45,8 @@ class CrossValidation:
             scores[0, i] = self.model.train(trainData)
             scores[1, i] = self.model.eval(validationData)
 
-            if debug.printEnabled:
-                debug.Print(
+            if Debug.printEnabled:
+                Debug.Print(
                     epoch=i + 1,
                     trainScores=self.model.metrics.scores2Dict(scores[0, i]),
                     validationScores=self.model.metrics.scores2Dict(scores[1, i]),
@@ -67,7 +67,7 @@ class HoldoutCrossValidation(CrossValidation):
     ):
         super().__init__(model, testSize, numberOfEpochs)
         self.validationSize = validationSize
-        debug.Print(
+        Debug.Print(
             numberOfEpochs=numberOfEpochs,
             testSize=testSize,
             validationSize=validationSize,
@@ -85,8 +85,8 @@ class HoldoutCrossValidation(CrossValidation):
             scores[0, i] = self.model.train(trainData)
             scores[1, i] = self.model.eval(validationData)
 
-            if debug.printEnabled:
-                debug.Print(
+            if Debug.printEnabled:
+                Debug.Print(
                     epoch=i + 1,
                     trainScores=self.model.metrics.scores2Dict(scores[0, i]),
                     validationScores=self.model.metrics.scores2Dict(scores[1, i]),
@@ -112,7 +112,7 @@ class KFoldCrossValidation(CrossValidation):
         super().__init__(model, testSize, numberOfEpochs)
         self.nSplits = nSplits
         self.nRepeats = nRepeats
-        debug.Print(
+        Debug.Print(
             numberOfEpochs=numberOfEpochs,
             testSize=testSize,
             nSplits=nSplits,
@@ -128,7 +128,7 @@ class KFoldCrossValidation(CrossValidation):
         for i, (trainIndices, testIndices) in enumerate(
             rskf.split(*self.trainData.dataset.tensors)
         ):
-            debug.Print(split=i)
+            Debug.Print(split=i)
             self.model.net.resetParameters()
             trainData, validationData = self.trainData.trainTestSplitByIndices(
                 trainIndices, testIndices

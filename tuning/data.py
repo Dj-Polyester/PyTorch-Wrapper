@@ -2,7 +2,7 @@ from typing import Any
 from torch.utils.data import DataLoader, Dataset, TensorDataset, Subset, random_split
 from torch import nn as nn, Tensor
 import numpy as np
-from utils import debug
+from utils import Debug
 
 
 class Data:
@@ -30,7 +30,7 @@ class Data:
         elif isinstance(testSize, float):
             lengths = [1 - testSize, testSize]
         else:
-            raise debug.TypeError(testSize=testSize)
+            raise Debug.TypeError(testSize=testSize)
         traindataset, testdataset = random_split(self.dataset, lengths=lengths)
         return (
             Data(traindataset),

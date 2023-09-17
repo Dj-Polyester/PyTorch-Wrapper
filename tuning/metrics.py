@@ -1,7 +1,7 @@
 from types import FunctionType
 import torch
 from torch import Tensor
-from utils import debug
+from utils import Debug
 
 
 class Metric:
@@ -38,7 +38,7 @@ class Metrics:
             elif callable(_metrics):
                 self.addIfPossible(*self._create(_metrics))
             else:
-                debug.TypeError(_metrics=_metrics)
+                Debug.TypeError(_metrics=_metrics)
 
     def addIfPossible(self, metricName, metricVal):
         if (
@@ -56,7 +56,7 @@ class Metrics:
         elif callable(metric):
             return metric.__name__, metric
         else:
-            debug.TypeError(metric=metric)
+            Debug.TypeError(metric=metric)
 
     def __len__(self):
         return len(self.map)
