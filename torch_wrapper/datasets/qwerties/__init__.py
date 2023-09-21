@@ -1,7 +1,7 @@
 import torch
 from torch import Tensor
 from torch.utils.data import TensorDataset
-from pathlib import Path
+from ...utils.path import Path, fromRaw
 from ... import LOCATION
 import json
 
@@ -10,7 +10,7 @@ def generate(
     centroids: list,
     clusterSizes: list[int],
     blurs: list,
-    root=LOCATION / Path("datasets") / Path("qwerties"),
+    root: str | Path = LOCATION / Path("datasets") / Path("qwerties"),
 ):
     if len(centroids) != len(clusterSizes):
         raise Exception("lengths of centroids and clusterSizes are not the same")
@@ -18,6 +18,8 @@ def generate(
         raise Exception("lengths of blurs and clusterSizes are not the same")
     if len(centroids) != len(blurs):
         raise Exception("lengths of centroids and blurs are not the same")
+
+    root = fromRaw(root)
 
     if not root.exists():
         root.mkdir(parents=True)
