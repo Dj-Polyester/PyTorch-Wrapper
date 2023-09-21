@@ -19,6 +19,9 @@ def generate(
     if len(centroids) != len(blurs):
         raise Exception("lengths of centroids and blurs are not the same")
 
+    if not root.exists():
+        root.mkdir(parents=True)
+
     qwertiesFilePath = root / Path("qwerties.json")
     if Path.exists(qwertiesFilePath):
         with open(qwertiesFilePath, "r") as f:
