@@ -1,5 +1,7 @@
 import itertools
 from .cv import *
+from ..utils.path import fromRaw, mkdirIfNotExists, Path
+from .literals import BATCH_SIZE, TRAIN_BATCH_SIZE, VALIDATION_BATCH_SIZE
 
 
 class Tuner:
@@ -10,45 +12,53 @@ class Tuner:
         tunableParams: dict,
         condition=lambda **_: True,
         device: str = "cuda",
-        filename: str = None,
+        filePath: str | Path = Path("results") / Path("result.txt"),
+        processList=False,
     ) -> None:
-        self.filename = filename
+        self.processList = processList
+        self.filePath = filePath
         self.cv = cv
         self.tunableParams = tunableParams
         self.condition = condition
         self.device = device
         self.net = net
+        self.numberOfHyperParams = self._calcNumberOfHyperParams()
         Debug.Print(device=device, cvType=self.cv.__class__.__name__)
 
     def fit(self):
         file = None
-        filename = self.filename
-        if filename != None:
-            file = open(filename, "a+")
+        if self.filePath != None:
+            self.filePath = fromRaw(self.filePath)
+            mkdirIfNotExists(self.filePath)
+            file = open(self.filePath, "a+")
             file.truncate(0)
+            file.write(
+                f"{self.processList}\n" + f"{list(self.cv.model.metrics.keys())}\n"
+            )
+
+        if self.processList:
+            self.scoresForConfigs = self.cv.model.metrics.zerosFrom4d(
+                self.numberOfHyperParams, self.cv.numberOfEpochs
+            )
+        elif file != None:
+            print([self.numberOfHyperParams, self.cv.numberOfEpochs], file=file)
 
         for i, hyperParams in enumerate(
             self.hyperparamGen(self.condition, **self.tunableParams)
         ):
-            scoresForConfig = self.setupAndFit(i, hyperParams)
-            if i == 0:
-                self.scoresForConfigs = self.cv.model.metrics.zerosFrom4d(
-                    self.numberOfHyperParams(),
-                    self.cv.numberOfEpochs,
-                )
-                if file != None:
-                    print(
-                        list(self.cv.model.metrics.keys()),
-                        file=file,
-                    )
-            self.scoresForConfigs[i] = scoresForConfig
+            scoresForConfig = self.setupAndFitCV(i, hyperParams)
+            if self.processList:
+                self.scoresForConfigs[i] = scoresForConfig
+            elif file != None:
+                print(scoresForConfig.tolist(), file=file)
 
         if file != None:
-            self.scoresForConfigs = self.scoresForConfigs.permute(3, 1, 0, 2)
-            file.write(str(self.scoresForConfigs.tolist()))
+            if self.processList:
+                self.scoresForConfigs = self.scoresForConfigs.permute(3, 1, 2, 0)
+                file.write(str(self.scoresForConfigs.tolist()))
             file.close()
 
-    def setupAndFit(self, i, hyperParams):
+    def setupAndFitCV(self, i, hyperParams):
         dataHyperParamsKeys = [
             BATCH_SIZE,
             TRAIN_BATCH_SIZE,
@@ -86,10 +96,8 @@ class Tuner:
         ):
             Debug.Print(param=i, params=hyperParams)
 
-    def numberOfHyperParams(self):
-        if not hasattr(self, "_numberOfHyperParams"):
-            numberOfHyperParamsTmp = 1
-            for tunableParamVal in self.tunableParams.values():
-                numberOfHyperParamsTmp *= len(tunableParamVal)
-            self._numberOfHyperParams = numberOfHyperParamsTmp
-        return self._numberOfHyperParams
+    def _calcNumberOfHyperParams(self):
+        numberOfHyperParams = 1
+        for tunableParamVal in self.tunableParams.values():
+            numberOfHyperParams *= len(tunableParamVal)
+        return numberOfHyperParams

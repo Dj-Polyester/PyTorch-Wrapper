@@ -1,16 +1,7 @@
 # hyperparameter tuning and cross validation
 from sklearn import model_selection
-
 from .estimator import *
-
-# Data
-BATCH_SIZE = "batchSize"
-TRAIN_BATCH_SIZE = "trainBatchSize"
-VALIDATION_BATCH_SIZE = "validationBatchSize"
-# Cross validation
-VALIDATION_SIZE = "validationSize"
-NUMBER_OF_SPLITS = "nSplits"
-NUMBER_OF_REPEATS = "nRepeats"
+from .literals import BATCH_SIZE, TRAIN_BATCH_SIZE, VALIDATION_BATCH_SIZE
 
 
 class CrossValidation:

@@ -3,10 +3,7 @@ from torch.optim.optimizer import Optimizer
 
 from .data import *
 from .metrics import Metric, Metrics
-
-# Tunable params
-LEARNING_RATE = "learningRate"
-OPTIMIZER = "optimizer"
+from .literals import OPTIMIZER, LEARNING_RATE
 
 
 class TorchEstimator:
