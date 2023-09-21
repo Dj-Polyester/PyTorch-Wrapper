@@ -14,6 +14,12 @@ class Debug:
             names = ", ".join(map(str, kwargs.keys()))
             super().__init__(f"Variable(s) {names} have invalid value(s) {values}")
 
+    class AttributeError(AttributeError):
+        def __init__(self, **kwargs) -> None:
+            attrs = ", ".join(map(str, kwargs.values()))
+            objs = ", ".join(map(str, kwargs.keys()))
+            super().__init__(f"Object(s) {objs} have invalid attribute(s) {attrs}")
+
     def Print(**kwargs):
         if Debug.printEnabled:
             print(", ".join([f"{k}: {v}" for k, v in kwargs.items()]))

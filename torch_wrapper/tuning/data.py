@@ -56,9 +56,7 @@ class Data:
     def __getitem__(self, offset: int):
         if hasattr(self, "dataset"):
             return self.dataset[offset]
-        raise Exception(
-            "Cannot index non-existing dataset. Method load is called with deleteDataset=True"
-        )
+        raise Debug.AttributeError(self="dataset")
 
     def __iter__(self):
         if hasattr(self, "loader"):
