@@ -2,12 +2,12 @@ from _io import TextIOWrapper
 
 
 class Str(str):
-    def __new__(cls, obj):
+    def __new__(cls, obj, limiter=None):
         instance = super().__new__(cls, obj)
         instance.whitespace = (" ", "\t", "\n")
         if isinstance(obj, TextIOWrapper):
             instance.file = obj
-            instance.iter = instance._iter
+            instance.iter = lambda: instance._iter(limiter)
         else:
             instance.iter = instance.__iter__
         return instance
@@ -15,18 +15,26 @@ class Str(str):
     @staticmethod
     def _convert(item: str):
         try:
-            return Str(item).tolist()
-        except StrException:
+            return int(item)
+        except ValueError:
             try:
-                return Str(item).toset()
-            except StrException:
+                return float(item)
+            except ValueError:
                 try:
-                    return Str(item).todict()
+                    return Str(item).tolist()
                 except StrException:
                     try:
-                        return eval(item)
-                    except SyntaxError:
-                        return item
+                        return Str(item).toset()
+                    except StrException:
+                        try:
+                            return Str(item).todict()
+                        except StrException:
+                            try:
+                                return eval(item)
+                            except SyntaxError:
+                                raise StrException(
+                                    "Cannot convert atomic item to a valid object"
+                                )
 
     def _addFn(self, item):
         if isinstance(self.tmpContainer, list):
@@ -98,14 +106,16 @@ class Str(str):
         if c not in self.whitespace:
             self.prevSym = c
 
-    def _iter(self):
+    def _iter(self, limiter="\n"):
         c = True
         while c:
             c = self.file.read(1)
+            if c == limiter:
+                break
             if c not in self.whitespace and c:
                 yield c
 
-    def tocontainer(self, _type, fn, allowCommaBeforeClosingSym):
+    def tocontainer(self, _type, fn=_convert, allowCommaBeforeClosingSym=True):
         if _type == list:
             self.openingSym = "["
             self.closingSym = "]"
