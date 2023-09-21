@@ -1,4 +1,5 @@
 test.*
 *.txt
 results
-**/__pycache__/**
+__pycache__
+*.py
