@@ -12,7 +12,7 @@ class Tuner:
         tunableParams: dict,
         condition=lambda **_: True,
         device: str = "cuda",
-        filePath: str | Path = Path("results") / Path("result.txt"),
+        filePath: str | Path = Path(".results") / Path("result.txt"),
         processList=False,
     ) -> None:
         self.processList = processList

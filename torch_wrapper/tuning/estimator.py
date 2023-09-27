@@ -1,4 +1,5 @@
 import torch
+from torch import nn, Tensor
 from torch.optim.optimizer import Optimizer
 
 from .data import *
@@ -15,7 +16,6 @@ class TorchEstimator:
         _in: int = None,
         out: int = 1,
         _metrics: str = Metric.Accuracy,
-        filename=None,
     ):
         self.data = data
         inputSize = data[0][0].numel()

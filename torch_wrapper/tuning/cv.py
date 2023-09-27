@@ -63,26 +63,6 @@ class HoldoutCrossValidation(CrossValidation):
             validationSize=validationSize,
         )
 
-    def fit(self, **kwargs) -> Tensor:
-        raise NotImplementedError()
-
-        trainData.load(trainBatchSize)
-        validationData.load(validationBatchSize)
-        scores = self.model.metrics.zerosFrom3d(self.numberOfEpochs).to(
-            device=self.model.device
-        )
-        for i in range(self.numberOfEpochs):
-            scores[0, i] = self.model.train(trainData)
-            scores[1, i] = self.model.eval(validationData)
-
-            if Debug.printEnabled:
-                Debug.Print(
-                    epoch=i + 1,
-                    trainScores=self.model.metrics.scores2Dict(scores[0, i]),
-                    validationScores=self.model.metrics.scores2Dict(scores[1, i]),
-                )
-        return scores
-
     def fit(self, **kwargs):
         """Trains on train set, tests on validation set"""
         self.model.net.resetParameters()
